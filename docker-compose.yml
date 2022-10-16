@@ -1,34 +1,73 @@
-version: '3'
+version: "3.4"
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: 'mysql:8'
+  php:
+    build:
+      context: .
+      target: app_php
+      args:
+        SYMFONY_VERSION: ${SYMFONY_VERSION:-}
+        STABILITY: ${STABILITY:-stable}
+        TIMEZONE: ${TIMEZONE}
+    restart: unless-stopped
+    volumes:
+      - php_socket:/var/run/php
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: main
-    ports:
-      # To allow the host machine to access the ports below, modify the lines below.
-      # For example, to allow the host to connect to port 3306 on the container, you would change
-      # "3306" to "3306:3306". Where the first port is exposed to the host and the second is the container port.
-      # See https://docs.docker.com/compose/compose-file/compose-file-v3/#ports for more information.
-      - '3306'
-  mysql:
-    image: 'mysql:8'
+      DATABASE_URL: mysql://little_something:little_something@localhost:3306/little_something?serverVersion=8&charset=utf8mb4
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://caddy/.well-known/mercure}
+      MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+
+  caddy:
+    build:
+      context: .
+      target: app_caddy
+    depends_on:
+      - php
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: main
+      SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+    restart: unless-stopped
+    volumes:
+      - php_socket:/var/run/php
+      - caddy_data:/data
+      - caddy_config:/config
     ports:
-      # To allow the host machine to access the ports below, modify the lines below.
-      # For example, to allow the host to connect to port 3306 on the container, you would change
-      # "3306" to "3306:3306". Where the first port is exposed to the host and the second is the container port.
-      # See https://docs.docker.com/compose/compose-file/compose-file-v3/#ports for more information.
-      - '3306'
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      # HTTP
+      - target: 80
+        published: ${HTTP_PORT:-8001}
+        protocol: tcp
+      # HTTPS
+      - target: 443
+        published: ${HTTPS_PORT:-8002}
+        protocol: tcp
+
+# Mercure is installed as a Caddy module, prevent the Flex recipe from installing another service
+###> symfony/mercure-bundle ###
+###< symfony/mercure-bundle ###
+
+  db:
+    image: mysql:8.0.23
+    platform: linux/x86_64
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: little_something
+      MYSQL_USER: little_something
+      MYSQL_PASSWORD: little_something
+    ports:
+      - 3306:3306
+    volumes:
+      - db_data:/var/lib/mysql
 
 volumes:
-###> doctrine/doctrine-bundle ###
-  db-data:
-###< doctrine/doctrine-bundle ###
+  php_socket:
+  caddy_data:
+  caddy_config:
+  db_data:
