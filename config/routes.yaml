@@ -1,3 +1,16 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+default:
+    path: /
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController::urlRedirectAction
+    defaults:
+        path: /contact
+        permanent: true
+
+contact:
+    path: /contact
+    methods: [GET]
+    controller: App\Controller\ContactController::index
+
+contactNew:
+    path: /contact/new
+    methods: [POST]
+    controller: App\Controller\ContactController::new

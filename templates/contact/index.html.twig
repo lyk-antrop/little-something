@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{% trans %}Contacts{% endtrans %}{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+    table { border-collapse: collapse; };
+    th, td { border: 1px solid #999; }
+    th { background-color: #9cf}
+</style>
+
+<div class="example-wrapper">
+    <h1>{% trans %}Contacts{% endtrans %}</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>{% trans %}Name{% endtrans %}</th>
+                <th>{% trans %}Surname{% endtrans %}</th>
+                <th colspan="2">{% trans %}Phone Number{% endtrans %}</th>
+            </tr>
+        </thead>
+        
+        {{ form_start(form, {'action': path('contactNew')}) }}
+        <tr>
+            <td>{{ form_widget(form.name) }}</td>
+            <td>{{ form_widget(form.surname) }}</td>
+            <td>{{ form_widget(form.phoneNumber) }}</td>
+            <td>{{ form_widget(form.save) }}</td>
+        </tr>
+        {{ form_end(form) }}
+
+        {% for contact in contacts %}
+            <tr>
+                <td>{{ contact.name }}</td>
+                <td>{{ contact.surname }}</td>
+                <td colspan="2">{{ contact.phoneNumber }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
